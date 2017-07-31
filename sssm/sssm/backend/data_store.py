@@ -66,6 +66,9 @@ class Store(MutableMapping):
         if key is "portfolio":
             return self.data["portfolio"]
         
+        if key is "stocks":
+            return self.data["stocks"]
+        
     def __len__(self):
         return len(self.data)
 
