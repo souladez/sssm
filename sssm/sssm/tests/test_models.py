@@ -1,8 +1,9 @@
 import pytest
 from datetime import datetime
 
-from sssm.backend import CommonStock, PreferredStock
+from sssm.backend import CommonStock, PreferredStock, Transaction, Store, Trader
 from sssm.backend import data
+import uuid
 
 #@pytest.mark.skip()
 def test_errors():
@@ -18,7 +19,7 @@ def test_errors():
     with pytest.raises(ValueError):
         common.get_current_price(symbol2)
     
-def test_ro_data_access():
+def test_stocks_access():
     
     symbol1 = 'TEA'
     symbol2 = 'POP'
@@ -52,5 +53,84 @@ def test_ro_data_access():
     assert common.get_current_price(symbol1) == tea_stock_price
     assert preferred.get_current_price(symbol4) == gin_stock_price
 
+def test_traders_access():
+    id = 'trader1'
+    token = uuid.uuid4()
+    s = Store()
+    created = datetime.now()
     
+    trader_record = {
+                'id': id,
+                'token': token,
+                '_type': 'User',
+                'created' : created
+            }
+    trader = Trader(id, token=token, store=s, created=created)
     
+    trader.save()
+    
+    assert id in s.get_traders()
+    assert trader.load(id) == trader_record
+    
+    with pytest.raises(ValueError):
+        trader = Trader(None, token=token, store=s, created=created)
+        
+def test_trades_access():
+    timestamp = datetime.now()
+    price = 15.0
+    stock = 'TEA'
+    trade_type = 'SELL'
+    qty = 1000
+    s = Store()
+    trader = 'trader1'
+    
+    td = Trader(trader, store=s)
+    
+    td.save()
+    
+    t = Transaction(stock, qty, price, 
+                 timestamp=timestamp, user=trader,
+                 store=s, trade_type=trade_type)
+    
+    expected_transaction_id = str(uuid.uuid3(
+                                        uuid.NAMESPACE_DNS,
+                                         str(timestamp) 
+                                         + trade_type  
+                                         + str(price) 
+                                         + trader 
+                                         + stock 
+                                         + str(qty)
+    ))
+    
+    txn_value = qty * price
+    
+    expected_txn = {
+                'trader': trader,
+                'id': expected_transaction_id,
+                'type': trade_type,
+                'ts':  timestamp,
+                'symbol' : stock,
+                'volume' : qty,
+                'value': txn_value,
+                'per_price': price
+               }
+    transaction_id = t.save()
+    
+    assert expected_transaction_id == transaction_id
+    assert expected_transaction_id in s.get_transactions()
+    assert t.load(transaction_id) == expected_txn
+    
+    with pytest.raises(ValueError):
+        t = Transaction(None, qty, price, 
+                 timestamp=timestamp, user=trader,
+                 store=s, trade_type=trade_type)
+    
+    with pytest.raises(ValueError):
+        t = Transaction(stock, None, price, 
+                 timestamp=timestamp, user=trader,
+                 store=s, trade_type=trade_type)
+   
+    with pytest.raises(ValueError):
+        t = Transaction(stock, qty, price, 
+                 timestamp=timestamp,
+                 store=s, trade_type=trade_type)

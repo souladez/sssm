@@ -92,3 +92,7 @@ class Store(MutableMapping):
                 shares_trading.append(share)
                 
         return shares_trading
+    
+    def get_type(self, symbol):
+        return self.data['stocks'][symbol]['Type']
+                
