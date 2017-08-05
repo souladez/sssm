@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from sssm.backend import CommonStock, PreferredStock, Transaction, Store, Trader
+from sssm.backend import CommonStock, PreferredStock, Transaction, Store, Trader, Shares_Trading
 from sssm.backend import data
 import uuid
 
@@ -18,6 +18,30 @@ def test_errors():
  
     with pytest.raises(ValueError):
         common.get_current_price(symbol2)
+
+def test_shares_trading():
+    timestamp = datetime.now()
+    price = 15.0
+    stock1 = 'TEA'
+    stock2 = 'GIN'
+    qty = 1000
+    s = Store()
+    st = Shares_Trading(store=s)
+    
+    init_qty = st.get_qty(stock1)
+    st.sell(stock1, qty)
+    post_qty = st.get_qty(stock1)
+    
+    qty_diff = init_qty + 1000
+    assert st.get_qty(stock1) == qty_diff
+    
+    init_qty = st.get_qty(stock2)
+    st.buy(stock2, qty)
+    post_qty = st.get_qty(stock2)
+
+    qty_diff = init_qty - 1000
+    
+    assert st.get_qty(stock2) == qty_diff
     
 def test_stocks_access():
     
@@ -53,6 +77,44 @@ def test_stocks_access():
     assert common.get_current_price(symbol1) == tea_stock_price
     assert preferred.get_current_price(symbol4) == gin_stock_price
 
+def test_dividend_yield_pe_ratio():
+    
+    # general
+    price = 14.0
+    s = Store()
+    
+    # common stock
+    stock_type = "Common"
+    symbol = 'JOE'
+    common = CommonStock()    
+    ld = common.get_last_dividend(symbol)
+    dividend = ld / price
+    
+    pe_ratio = price / dividend
+    
+    assert common.dividend_yield(symbol, price) == dividend
+    assert common.pe_ratio(symbol, price) == pe_ratio
+    
+    # for preferred stock
+    stock_type = "Preferred"
+    symbol = 'GIN'
+    preferred = PreferredStock()    
+    ld = preferred.get_last_dividend(symbol)
+    
+    fd = preferred.get_fixed_dividend(symbol)
+    par_value = preferred.get_par_value(symbol)
+
+    dividend = fd * par_value / price
+
+    pe_ratio = price / dividend
+    
+    assert preferred.dividend_yield(symbol, price) == dividend
+    assert preferred.pe_ratio(symbol, price) == pe_ratio
+    
+        
+def test_peratio():
+    pass
+
 def test_traders_access():
     id = 'trader1'
     token = uuid.uuid4()
@@ -63,7 +125,8 @@ def test_traders_access():
                 'id': id,
                 'token': token,
                 '_type': 'User',
-                'created' : created
+                'created' : created,
+                'portfolio': []
             }
     trader = Trader(id, token=token, store=s, created=created)
     
@@ -71,7 +134,10 @@ def test_traders_access():
     
     assert id in s.get_traders()
     assert trader.load(id) == trader_record
-    
+
+    with pytest.raises(ValueError):
+        token = Trader(id, token=token, store=s, created=created).save()
+        
     with pytest.raises(ValueError):
         trader = Trader(None, token=token, store=s, created=created)
         
@@ -119,18 +185,3 @@ def test_trades_access():
     assert expected_transaction_id == transaction_id
     assert expected_transaction_id in s.get_transactions()
     assert t.load(transaction_id) == expected_txn
-    
-    with pytest.raises(ValueError):
-        t = Transaction(None, qty, price, 
-                 timestamp=timestamp, user=trader,
-                 store=s, trade_type=trade_type)
-    
-    with pytest.raises(ValueError):
-        t = Transaction(stock, None, price, 
-                 timestamp=timestamp, user=trader,
-                 store=s, trade_type=trade_type)
-   
-    with pytest.raises(ValueError):
-        t = Transaction(stock, qty, price, 
-                 timestamp=timestamp,
-                 store=s, trade_type=trade_type)
