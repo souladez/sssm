@@ -1,4 +1,4 @@
-# Super Simple Stocks
+=== Super Simple Stocks ===
 Super Simple Stock Market and Trading Platform
 
 ## Version
