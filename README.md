@@ -1,4 +1,5 @@
-=== Super Simple Stocks ===
+## Super Simple Stocks
+
 Super Simple Stock Market and Trading Platform
 
 ## Version
@@ -24,29 +25,30 @@ See execution examples below:
 Please note: Starting the SSSM as a service (as advised above using ``python api.py``) simulates around 30mins of trade.
 So all operations should be available.
 
-####Permitted Operations 
+## Permitted Operations 
+
 Note: Run after starting application as a service (see above).
 
-1. Compute dividend yield & PEratio
+### Compute dividend yield & PEratio
     Examples: http://<baseurl>/stock/ALE?operation=dividend&price=12
               http://<baseurl>/stock/JOE?operation=peratio&price=14
 
-2. Compute Weighted Volume
+### Compute Weighted Volume
 
     GET /platform/volume_weighted_stock_price?interval=[interval (in mins, default 15)]
         
-3. Compute All Share Index
+### Compute All Share Index
 
     GET /platform/index
     
     Example call: http://<baseurl>/platform/index
     
-4. Weighted Volume and All Share index
+### Weighted Volume and All Share index
 
     GET /platform
     
     Example call : http://<baseurl>/platform
 
-5. Trade: Endpoint not implemented in API service
+### Trade: Endpoint not implemented in API service
 
-6. User creation: Endpoint not implemented in API service
+### User creation: Endpoint not implemented in API service
