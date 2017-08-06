@@ -61,7 +61,7 @@ def test_trading():
     assert st.get_qty(stock) == shares_qty_diff
     assert trader_portfolio == expected_portfolio
     
-    # trader tries to sell some stock
+    # trader tries to sell some stock they don't have
     qty = 1001
     price = 15.5
 

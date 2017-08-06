@@ -5,6 +5,9 @@ from datetime import datetime
 from datetime import timedelta
 from threading import Lock
 from functools import wraps
+import uuid
+import random
+
 from sssm.backend import (
     Store, 
     CommonStock, 
@@ -21,7 +24,11 @@ logging.basicConfig(level=logging.DEBUG,
                     )
 
 class Platform():
-
+    """ Trading platform for traders. It simulates ~30mins of trade
+        using the Platform.simulate() method for testing.
+        
+    """
+    
     def __init__(self, store=None, p_stock_orm=None, 
                     c_stock_orm=None, shares_trading_orm=None):
         
@@ -34,6 +41,40 @@ class Platform():
         self._preferred_stock = p_stock_orm if p_stock_orm else PreferredStock(store=self._store)
         self._shares_trading = shares_trading_orm if shares_trading_orm else Shares_Trading(store=self._store)
 
+    def simulate(self):
+        base_price = 22.0
+        stocks = ['TEA', 'GIN', 'JOE', 'ALE', 'POP']
+        trade_types = ['SELL', 'BUY']
+      
+        traders = []
+        tokens = []
+
+        # create traders
+        for i in range(100):
+            trader = uuid.uuid4()
+            traders.append(str(trader))
+            td = Trader(str(trader), store=self._store)
+            tokens.append(td.save())
+
+            # trading times: simulate 30mins of trading
+        now = datetime.now()
+        txn_times = [now - timedelta(seconds=i) for i in range(1800)]
+        txn_ids = []
+
+        for time in txn_times:
+            idx = random.randint(0, 99)
+            qty = random.randrange(1, 10000, 1)
+            ttype_idx = random.randint(0, 1)
+            stocks_idx = random.randint(0, 4)
+            price = base_price + 10 * random.random()
+
+            try:        
+                txn_ids.append(self.trade(traders[idx], tokens[idx], stocks[stocks_idx], 
+                    qty, price, trade_type=trade_types[ttype_idx], timestamp=time))
+
+            except ValueError:
+                pass    
+        
     @validate_stock('Platform')
     def create_user(id):
         return Trade(id, store=self.store).save()
@@ -44,7 +85,45 @@ class Platform():
     #@validate_stock('Platform')
     def trade(self, trader, token, symbol, qty, 
               price, trade_type='BUY', timestamp=datetime.now()):
+        """ Function to conduct trader with input parameters.
+            
+        Parameters
+        ----------
+        trader : str
+            Id of trader
+        token : str
+            access token obtained by trader at registration
+        symbol : str
+            symbol of stock to trade
+        qty : int
+            quantity of stock to trade
+        price : float
+            stock price
+        trade_type : str
+            indicator for trade type: BUY or SELL
+        timestamp : datetime.datetime
+            time to record against trade
+            
+        Return
+        ------
+        txnid : str
+            Id of saved/recorded transaction
+            
+        Example
+        -------
+        >>> from sssm.backend import Platform, Store
+        >>> trader = 'trader1'
+        >>> t = Trader(trader)
+        >>> token = t.save()
+        >>> stock = 'GIN'
+        >>> qty = 1000
+        >>> price = 15.0
+        >>> s = Store()
+        >>> p = Platform(s)
+        >>> p.trade(trader, token, stock, qty, price, trade_type='SELL')
+        UUID('1317e634-4b7a-459a-b0d5-55beb351c190')
         
+        """
         if not symbol:
             raise ValueError("[ERROR] Platform: Stock symbol must be provided.")
 
@@ -150,7 +229,7 @@ class Platform():
 
         Examples
         --------
-        >>> from sssm.backend import platform
+        >>> from sssm.backend import Platform
         >>> stock_symbol = 'TEA'
         >>> price = 25.0
         >>> platform.compute_dividend_yield(stock_symbol, price)
@@ -181,6 +260,7 @@ class Platform():
             
         ref : datetime
             Reference of date/time from which relative time (``since``) should start.
+            
         Returns
         -------
         price : float
@@ -206,8 +286,11 @@ class Platform():
             
         return sum(price_qty) / sum(qty)
     
-    def all_share_index():
+    def all_share_index(self):
 
+        """ Obtain all share index for stock prices.
+        """
+        
         # let's leverage numpy capabilities
         import numpy as np
             

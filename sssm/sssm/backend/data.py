@@ -1,3 +1,7 @@
+"""
+Super Simple Stock Market data.
+
+"""
 COLLECTIONS = set(["stocks", "transactions", "traders",
                    "portfolio", "shares_trading"]) # 
 

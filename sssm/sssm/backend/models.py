@@ -17,10 +17,13 @@ class Shares_Trading(object):
     
     Examples
     --------
+    >>> from sssm.backend import Shares_Trading
+    >>> s = Store()
+    >>> st = Shares_Trading(s)
+    >>> stock = 'TEA'
+    >>> qty = 100
+    >>> st.sell(stock, qty)
     
-    >>> from sssm.backend import User
-    >>> id = 'trader1'
-    >>> u = Trader(id)
     
     """
 
@@ -39,6 +42,26 @@ class Shares_Trading(object):
         """
         A trader buys some stock, leading to decreased shares trading.
         
+        Parameters
+        ----------
+        symbol : str
+            stock symbol being bought by trader from shares trading
+        qty : int
+            Quantity of stocks to trade
+        
+        Returns
+        -------
+        None
+        
+        Examples
+        --------
+        >>> from sssm.backend import Shares_Trading
+        >>> s = Store()
+        >>> st = Shares_Trading(s)
+        >>> stock = 'TEA'
+        >>> qty = 100
+        >>> st.buy(stock, qty)
+
         """
         self._store['shares_trading'][symbol] = \
             self._store['shares_trading'][symbol] - qty
@@ -47,12 +70,55 @@ class Shares_Trading(object):
         """
         A trader sells some stock back to company, leading to increased shares trading.
         
+        Parameters
+        ----------
+        symbol : str
+            stock symbol being sold by trader to shares trading
+        qty : int
+            Quantity of stocks to trade
+        
+        Returns
+        -------
+        None
+        
+        Examples
+        --------
+        >>> from sssm.backend import Shares_Trading
+        >>> s = Store()
+        >>> st = Shares_Trading(s)
+        >>> stock = 'TEA'
+        >>> qty = 100
+        >>> st.sell(stock, qty)
+
         """
         
         self._store['shares_trading'][symbol] = \
             self._store['shares_trading'][symbol] + qty
         
     def get_qty(self, symbol):
+        """
+        Parameters
+        ----------
+        symbol : str
+            stock symbol for which quantiy is being requested.
+       
+        Returns
+        -------
+        qty : int
+            Quantity of trading stock.
+        
+        Examples
+        --------
+        >>> from sssm.backend import Shares_Trading
+        >>> s = Store()
+        >>> st = Shares_Trading(s)
+        >>> stock = 'TEA'
+        >>> qty = 100
+        >>> st.buy(stock, qty)
+        >>> st.get_qty(stock)
+        100
+        
+        """
         return self._store['shares_trading'][symbol]
     
 class Trader(object):
@@ -61,9 +127,11 @@ class Trader(object):
     Examples
     --------
     
-    >>> from sssm.backend import User
+    >>> from sssm.backend import Trader
     >>> id = 'trader1'
-    >>> u = Trader(id)
+    >>> t = Trader(id)
+    >>> t.save()
+    UUID('1317e634-4b7a-459a-b0d5-55beb351c190')
     
     """
     
@@ -116,7 +184,14 @@ class Trader(object):
         self._updated = True
         
     def save(self):
-        
+        """ Save current trader to store s.
+            
+        Returns
+        -------
+        token : str
+            trader's access token for trading.
+            
+        """
         if self._id in self._store.get_traders() and not self._updated:
             raise ValueError("[ERROR] Trader: User {} does exist.".format(self._id))
         
@@ -133,7 +208,14 @@ class Trader(object):
         return self._token
     
     def load(self, id):
-        
+        """ Load trader whose id is specified from store s.
+            
+        Returns
+        -------
+        _record : dict
+            trader's record.
+            
+        """
         if self._store['traders'].get(id):
             self._record = self._store['traders'][id]
             self._load(self._record)
@@ -153,9 +235,18 @@ class Transaction(object):
     
     Examples
     --------
-    
+    >>> from datetime import datetime
     >>> from sssm.backend import Transaction
-    >>> 
+    >>> from sssm.backend import Transaction
+    >>> symbol = 'TEA'
+    >>> qty = 100
+    >>> price = 15.0
+    >>> id = 'trader1'
+    >>> t = Trader(id)
+    >>> token = t.save()
+    >>> s = Store()
+    >>> txn = Transaction(symbol, qty, price, timestamp=datetime.now(), user=trader1, store=s)
+        
     """
     
     def __init__(self, stock, qty, price, 
@@ -231,6 +322,15 @@ class Transaction(object):
         self._store = store
         
     def save(self):
+        """ Save current transaction in store.
+        
+        Returns
+        -------
+        transaction_id : UUID
+            ID associated with current/saved transaction.
+            
+        """
+        
         if self._user not in self._store.get_traders():
             raise ValueError("[ERROR] Transaction: User {} doesn't exist.".format(self._user))
         
@@ -264,6 +364,15 @@ class Transaction(object):
         return self._transaction_id
     
     def load(self, id):
+        """ Load transaction data for specified Id.
+        
+        Returns
+        -------
+        _record : dict
+            Transaction record associated with ``id``.
+            
+        """
+        
         self._record = self._store['transactions'][id]
         self._load(self._record)
         
@@ -279,6 +388,20 @@ class Transaction(object):
         self._price = record['per_price']
     
     def find(self, timestamp=None):
+        """ Search / find transactions that occured at a later time than specified datetime.
+        
+        Parameter
+        ---------
+        timestamp : datetime.datetime
+            Time of transaction.
+            
+        Returns
+        -------
+        txn_ids : list
+            Ids of transactions whose lower bounds are specified ``timestamp``.
+            
+        """
+        
         txn_ids = []
         
         if not timestamp:
@@ -340,7 +463,7 @@ class CommonStock(Stock):
     >>> symbol = 'TEA'
     >>> stock = CommonStock(symbol)
     >>> stock.get_current_price()
-    13.0
+    -1.0
     """
     
     def __init__(self, *args, **kwargs):
@@ -364,7 +487,7 @@ class PreferredStock(Stock):
     >>> symbol = 'GIN'
     >>> stock = PreferredStock(symbol)
     >>> stock.get_current_price()
-    13.0
+    -1.0
     """
     
     def __init__(self, *args, **kwargs):
@@ -372,11 +495,16 @@ class PreferredStock(Stock):
     
     @validate_stock('')
     def get_fixed_dividend(self, symbol):
+        """ Retrive fixed dividend for preferred stock specified.
+        
+        """
         return self.store['stocks'][symbol]['Fixed_Dividend']
     
     @validate_stock('')
     def dividend_yield(self, symbol, price):
-
+        """ Compute dividend yield for preferred stock specified.
+        
+        """
         fd = self.get_fixed_dividend(symbol)
         par_value = self.get_par_value(symbol)
 

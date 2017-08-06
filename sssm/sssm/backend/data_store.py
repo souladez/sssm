@@ -6,17 +6,32 @@ from sssm.backend import data
 class Store(MutableMapping):
     """ Store - In-memory store for Super Simple Stock Market.
     
+        The following stocks and trading data are accessed:
+        ``stocks``, ``transactions``, ``traders``, ``trades``,
+        ``shares_trading``.
+        
     Examples
     --------
     Store data like a dictionary
     >>> from sssm.backend import Store
-    >>> storage = Store()
-    >>> storage['traders']['id'] = {'id':'xyz', 'token': 'token'} # add a new trader
-    >>> storage['traders']['id']
-    {'id':'xyz', 'token': 'token', '_type':'trader'}
+    >>> s = Store()
+    >>> s['traders']['xyz'] = {'id':'xyz', 'token': 'token'} # add a new trader
+    >>> s['traders']['xyz']
+    {'token': 'token', 'id': 'xyz'}
+    
     """
     
     def __init__(self, stocks=None, shares_trading=None):
+        """ In-memory store setup.
+        
+        Parameters
+        ----------
+        stocks : list
+            array of stock symbols
+        shares_trading : dict
+            Record mapper for shares trading
+            
+        """
         
         if stocks and type(stocks) == dict:
             self.stocks = stocks
@@ -34,6 +49,11 @@ class Store(MutableMapping):
         self.initialise_store()
     
     def initialise_store(self):
+        """ Store initialiser - sets up Super Simple Stock Market data in
+            ``sssm.backend.data``
+        
+        """
+        
         self.transactions = {}
         self.traders = {}
         self.portfolio = {}
@@ -48,6 +68,21 @@ class Store(MutableMapping):
         raise ValueError("Super Simple Stock Market Store does not support addition of new items.")
         
     def __getitem__(self, key):
+        """ Retrieve data from storage in dict-style format.
+        
+        Parameter
+        ---------
+        key : str
+            data to retrive from store: 
+
+        Returns
+        -------
+        self.data : dict or list
+            requested data - one of stocks, traders, shares_trading, 
+            transactions,
+            
+        """
+
         if not isinstance(key, str):
             raise IndexError("Store: Invalid key type specified.")
         
@@ -94,5 +129,14 @@ class Store(MutableMapping):
         return shares_trading
     
     def get_type(self, symbol):
+        """ Obtain stock type - Common or Preferred.
+        
+        Parameters
+        ----------
+        symbol : str
+            stock symbol for which type is being requested.
+            
+        """
+        
         return self.data['stocks'][symbol]['Type']
                 
